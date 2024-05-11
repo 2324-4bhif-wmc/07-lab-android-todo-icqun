@@ -1,0 +1,443 @@
+= Übung - Android mit RxJava3 - Julian Schludermann
+Julian Schludermann
+1.0.0, 11.05.2024
+:imagesdir: img
+:icons: font
+:sectnums:    // Nummerierung der Überschriften / section numbering
+// :toc:
+// :toclevels: 1
+:experimental:
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Aufgabe: Basisprojekt
+Für die erste Aufgabenstellung wurde die gegebene Arbeitsanleitung befolgt. Es ist also quasi eine Wiedergabe des bereits geschriebenen.
+
+[%collapsible]
+====
+*Projekt erstellen*
+
+* Neues Projekt mithilfe von Android Studio erstellen (link:todo[todo])
+
+*Dependencies hinzufügen und konfigurieren*
+
+* Zu link:todo/build.gradle.kts[build.gradle.kts(todo)] folgende Zeilen hinzufügen:
+[source, kotlin]
+----
+include::todo/build.gradle.kts[tag=deps]
+----
+* Die Plugin-Sektion von link:todo/app/build.gradle.kts[build.gradle.kts(app)] um folgende Zeilen erweitern:
+[source, kotlin]
+----
+include::todo/app/build.gradle.kts[tag=plugin]
+----
+* Die Java und Kotlin Versionen auf 17 bzw. 1.5.13 erhöhen:
+[source, kotlin]
+----
+include::todo/app/build.gradle.kts[tag=bump]
+----
+* Außerdem muss noch die Liste an packaging excludes erweitert werden, um überlappungen von Dateien von Abhängigkeiten zu verhindern. (Möglicherweise gibt es mehrere Abhängigkeiten, die die Datei META-INF/INDEX.LIST aufweisen, wodurch es beim Kompilieren und erstellen einer Jar-Datei zu konflikten kommt)
+[source, kotlin]
+----
+include::todo/app/build.gradle.kts[tag=exclude]
+----
+* Auch die Liste an *dependencies* muss um folgende Einträge erweitert werden:
+[source, kotlin]
+----
+include::todo/app/build.gradle.kts[tag=deps]
+----
+** RxJava und RxAndroid: Funktionalität für reaktives Programmieren von Android applikationen
+** Hilt und KSP: Bibliotheken für Dependency Injection
+** Jackson und Resteasy: Durchführung und Verarbeitung von REST-Aufrufen
+** Smallrye Config: Bibliothek für die Verwendung von application.properties
+* In link:todo/gradle/libs.versions.toml[libs.versions.toml] müssen außerdem Versions- und Konfigurationseinträge für die neuen Abhängigkeiten hinzugefügt werden
+[source, toml]
+----
+include::todo/gradle/libs.versions.toml[]
+----
+
+*DI Konfigurieren*
+
+* Nun wird der Einstiegspunkt der Applikation erstellt, welcher zur Initialisierung von Hilt (DI) benötigt wird. Außerdem wird zum Testen auch gleich ein kleines Log-Statement hinzugefügt.
+[source, java]
+----
+package at.htl.todo;
+
+import android.app.Application;
+import android.util.Log;
+
+import javax.inject.Singleton;
+import dagger.hilt.android.HiltAndroidApp;
+
+@HiltAndroidApp
+@Singleton
+public class TodoApplication extends Application {
+    static final String TAG = TodoApplication.class.getSimpleName();
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.i(TAG, "App started");
+    }
+}
+----
+* Vor dem ersten Start muss nur noch eine Zeile zum link:todo/app/src/main/AndroidManifest.xml[Manifest] der Applikation hinzugefügt werden: `android:name=".TodoApplication"`
+[source, xml]
+....
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- below here! -->
+    <application
+        android:name=".TodoApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Todo"
+        tools:targetApi="31">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Todo">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+....
+
+*Erste Schritte zum Umbau auf MVVM*
+
+* Als Nächstes wird die MainActivity Klasse umgebaut. Zuerst wird sie umbenannt auf link:todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[MainView] und in ein neues package `ui.layout` verschoben. Außerdem erbt sie nicht mehr von Component Activity erbt, sondern besitzt eine Methode `buildContent` die eine ComponentActivity als Übergabeparameter erhält. Die Klasse wird auch mit @Singleton versehen, damit sie injected werden kann. Die fertig umgebaute MainView Klasse sieht wie folgt aus:
+[source, kotlin]
+----
+package at.htl.todo.ui.layout
+
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import at.htl.todo.ui.theme.TodoTheme
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class MainView {
+
+    @Inject
+    constructor() {}
+
+    fun buildContent(activity: ComponentActivity) {
+        activity.enableEdgeToEdge()
+        activity.setContent {
+            TodoTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Greeting(
+                        name = "Android",
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    TodoTheme {
+        Greeting("Android")
+    }
+}
+----
+* Der nächste Schritt ist es nun diese View darzustellen. Dafür wird eine neue Klasse link:todo/app/src/main/java/at/htl/todo/MainActivity.java[MainActivity] erstellt. Diese ist mit der Annotation `@AndroidEntryPoint` versehen, um DI zu ermöglichen und Injected die zuvor erstellte  link:todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[MainView]. Da die neue Klasse von ComponentActivity erbt, kann sie einfach die `buildContent` methode der View aufrufen. Die Klasse sieht wie folgt aus:
+[source, java]
+----
+package at.htl.todo;
+
+import android.os.Bundle;
+import androidx.activity.ComponentActivity;
+import androidx.annotation.Nullable;
+import javax.inject.Inject;
+import at.htl.todo.ui.layout.MainView;
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
+public class MainActivity extends ComponentActivity {
+    @Inject
+    MainView mainView;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mainView.buildContent(this);
+    }
+}
+----
+* Die App kann nun gestartet werden. Sollten dabei ein ähnlicher Fehler wie `java.lang.ClassNotFoundException: Didn't find class "[...]MainActivity" on path: DexPathList...` auftreten, dann ist sicherzustellen, dass im `AndroidManifest` im Tag `<activity>` das Attribut `android:name` auf `.MainActivity` gesetzt ist.
+
+*Hinzufügen der Util-Klassen*
+
+* Als nächster Schritt müssen einige Util-Klassen heruntergeladen und im package link:todo/app/src/main/java/at/htl/todo/util[at.htl.todo.util] platziert werden.
+** Zu den Util-Klassen gehören:
+*** Ein Mapper: zum Konvertieren von Java Objekten zu Json und umgekehrt. Dieser wird auch für Deep-Clones verwendet
+*** Sämtliche Klassen zur Erleichterung von REST Anfragen
+*** Generische Store Klasse: Beinhaltet später das Modell der Applikation sowie das für reaktives Programmieren wichtige BehaviorSubject
+*** Immer: Ahmt die Funktionalität der Immer Bibliothek nach.
+*** ConfigModule: Erleichtert die Verwendung der Smallrye Config Bibliothek und umgeht einige Android besonderheiten
+
+*Konfiguration hinzufügen (application.properties)*
+
+* Zuerst muss in `todo/app/src/main` ein neuer Ordner namens `assets` erstellt werden. (link:todo/app/src/main/assets[link])
+* In diesem Ordner wird eine neue Datei `application.properties` erstellt mit folgendem Inhalt:
+[source, properties]
+----
+include::todo/app/src/main/assets/application.properties[]
+----
+* Außerdem muss noch eine link:todo/app/src/main/java/at/htl/todo/util/Config.java[Config] Klasse im Package `at.htl.todo.util` erstellt werden:
+[source, properties]
+----
+include::todo/app/src/main/java/at/htl/todo/util/Config.java[]
+----
+* Zum Testen kann die MainActivity Klasse erweitert werden:
+[source, java]
+----
+package at.htl.todo;
+
+import android.os.Bundle;
+import android.util.Log;
+
+import androidx.activity.ComponentActivity;
+import androidx.annotation.Nullable;
+import javax.inject.Inject;
+import at.htl.todo.ui.layout.MainView;
+import at.htl.todo.util.Config;
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
+public class MainActivity extends ComponentActivity {
+    static final String TAG = TodoApplication.class.getSimpleName();
+
+    @Inject
+    MainView mainView;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mainView.buildContent(this);
+
+        Config.load(this);
+        var baseUrl = Config.getProperty("json.placeholder.baseurl");
+        Log.i(TAG, "onCreate: " + baseUrl);
+    }
+}
+----
+
+*Model und Store*
+
+* Zur verwaltung des Applikationszustands wird nun ein Model benötigt. Der erste Teil ist eine link:todo/app/src/main/java/at/htl/todo/model/Todo.java[Todo Klasse] im Package `model`.
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/Todo.java[]
+----
+* Der Zustand der Applikation wird in der Klasse link:todo/app/src/main/java/at/htl/todo/model/Model.java[Model] abgebildet:
+[source, java]
+----
+package at.htl.todo.model;
+
+public class Model {
+    public Todo[] todos = {
+            new Todo(1L, 1L, "Buy milk", true),
+            new Todo(2L, 2L, "Buy eggs", false),
+            new Todo(3L, 3L, "Buy bread", false)
+    };
+}
+----
+* Zuletzt wird noch die Klasse link:todo/app/src/main/java/at/htl/todo/model/ModelStore.java[Model Store] benötigt. Diese erbt vom generischen Store aus der Util-Klasse Store und verwendet die Model Klasse als Typparameter. Außerdem wird die Klasse noch für die DI vorbereitet und eine `setTodos` funktion hinzugefügt.
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/ModelStore.java[]
+----
+
+*Erweiterung der MainView*
+
+* Zuerst muss die `buildContent` Methode der link:todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[Main View] etwas umgebaut werden. Einerseits wird noch davor der `ModelStore` injected und andererseits wird er innerhalb der Methode für die Beobachtung des Applikationszustands verwendet.
+[source, kotlin]
+----
+    @Inject
+    lateinit var store: ModelStore;
+
+    fun buildContent(activity: ComponentActivity) {
+        activity.enableEdgeToEdge()
+        activity.setContent {
+            val viewModel = store
+                .pipe
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeAsState(initial = Model())
+                .value
+
+            Surface (
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ){
+                Todos(model = viewModel, modifier = Modifier.padding(all = 32.dp))
+            }
+        }
+    }
+----
+* Außerhalb der link:todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[MainView] Klasse werden nun einige Composables angelegt zur Darstellung der Todos sowie für die Preview der Applikation ohne Emulator
+[source, kotlin]
+----
+
+@Composable
+fun Todos(model: Model, modifier: Modifier = Modifier) {
+    val todos = model.todos
+    LazyColumn(
+        modifier = modifier.padding(16.dp)
+    ) {
+        items(todos.size) { index ->
+            TodoRow(todo  = todos[index])
+            HorizontalDivider()
+        }
+    }
+}
+
+@Composable
+fun TodoRow(todo: Todo) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = todo.title,
+            style = MaterialTheme.typography.bodySmall
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = todo.id.toString(),
+            style = MaterialTheme.typography.bodySmall
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Checkbox(
+            checked = todo.completed,
+            onCheckedChange = { /* Update the completed status of the todo item */ }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TodoPreview() {
+    val model = Model()
+    val todo = Todo()
+    todo.id = 1
+    todo.title = "First Todo"
+    model.todos = arrayOf(todo)
+
+    TodoTheme {
+        Todos(model)
+    }
+}
+----
+
+* Wird die App gestartet, sollten die angelegten Beispiel Todos ersichtlich sein.
+
+*REST-Client*
+Die Todos sollten nicht selbst angelegt werden, sondern von der Jsonplaceholder API geholt werden.
+
+* Zuerst muss die link:todo/app/src/main/java/at/htl/todo/model/Model.java[Model] Klasse wieder zurückgebaut werden. Anstatt einem hartkodierten Array sollte ein leeres verwendet werden.
+[source, java]
+----
+package at.htl.todo.model;
+
+public class Model {
+    public Todo[] todos = new Todo[0];
+}
+----
+* Im `model` package muss außerdem ein neues Interface für den link:todo/app/src/main/java/at/htl/todo/model/TodoClient.java[Rest Client] angelegt werden:
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/TodoClient.java[]
+----
+* Neben dem Rest Client muss auch noch eine link:todo/app/src/main/java/at/htl/todo/model/TodoService.java[TodoService-Klasse] erstellt werden
+* Zum Schluss muss noch ein Aufruf zu `getAll` in der Applikation stattfinden. Dieser kann Beispielsweise in der link:todo/app/src/main/java/at/htl/todo/MainActivity.java[Main Activit] getätigt werden.
+[source, java]
+----
+package at.htl.todo;
+
+import android.os.Bundle;
+import android.util.Log;
+
+import androidx.activity.ComponentActivity;
+import androidx.annotation.Nullable;
+import javax.inject.Inject;
+
+import at.htl.todo.model.TodoService;
+import at.htl.todo.ui.layout.MainView;
+import at.htl.todo.util.Config;
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
+public class MainActivity extends ComponentActivity {
+    static final String TAG = TodoApplication.class.getSimpleName();
+
+    @Inject
+    MainView mainView;
+
+    @Inject
+    TodoService todoService;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mainView.buildContent(this);
+
+        Config.load(this);
+        var baseUrl = Config.getProperty("json.placeholder.baseurl");
+        Log.i(TAG, "onCreate: " + baseUrl);
+
+        todoService.getAll();
+    }
+}
+----
+* P.S.: Im link:todo/app/src/main/AndroidManifest.xml[AndroidManifest] muss noch `<uses-permission android:name="android.permission.INTERNET" />` über dem Application Tag hinzugefügt werden, sonst kann die App keine Requests an die Jsonplaceholder API durchführen. Das gesamte AndroidManifest.xml sieht wie folgt aus:
+[source, xml]
+....
+include::todo/app/src/main/AndroidManifest.xml[]
+....
+====
+
+== Aufgabe: Frontend überarbeiten
+
+=== Update der Todos durch Klicken der Checkbox
+Der erste Teil der noch fehlt ist 
