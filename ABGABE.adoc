@@ -1,12 +1,12 @@
 = Übung - Android mit RxJava3 - Julian Schludermann
 Julian Schludermann
 1.0.0, 11.05.2024
-:imagesdir: img
 :icons: font
 :sectnums:    // Nummerierung der Überschriften / section numbering
 // :toc:
 // :toclevels: 1
 :experimental:
+:toc:
 ifdef::env-github[]
 :tip-caption: :bulb:
 :note-caption: :information_source:
@@ -440,4 +440,74 @@ include::todo/app/src/main/AndroidManifest.xml[]
 == Aufgabe: Frontend überarbeiten
 
 === Update der Todos durch Klicken der Checkbox
-Der erste Teil der noch fehlt ist 
+Der erste Teil, der noch fehlt, ist, dass der Zustand `completed` durch Klicken der Checkbox verändert werden kann. Dafür muss die Funktion `onCheckedChanged` in der link:todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[Main View] vervollständigt werden.
+[source, kotlin]
+----
+onCheckedChange = {
+    store.apply { model ->
+        model.todos.find {
+            it.id == todo.id
+        }?.completed = it;
+    }
+}
+----
+Der Store muss natürlich mit übergeben werden damit der obige Codeteil funktioniert.
+
+=== Verbesserung der Übersicht
+Die im Tutorial gebaute Übersicht ist gut für den Anfang aber lässt auch etwas zu wünschen übrig:
+* Die Checkboxes sind nicht in einer Linie
+* Die Id ist teilweise unter den Checkboxen
+* Keine Möglichkeit den Zustand der Checkbox zu ändern (Wurde oben bereits behoben)
+* Keine Unterscheidung, ob ein Todo abgeschlossen ist oder nicht
+
+Die neue Ansicht hat einige dieser Schwachstellen ausgebessert:
+
+image::images/new_overview.png[]
+
+* Die Checkboxes sind nun alle auf der linken Seite und in einer Linie. Dasselbe gilt für die Ids.
+* Abgeschlossene Todos werden ausgegraut und deren titel durchgestrichen
+* Zu lange Titel werden richtig in die nächste Zeile geschoben und überlappen nicht mit anderen UI Komponenten
+
+==== Kosten
+* Da der Store an die einzelnen Composables übergeben werden muss habe ich es leider nicht mehr geschafft die Preview funktionstüchtig zu halten.
+* Es ist nun deutlich mehr Code und Komplexität in der link:todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[MainView]
+
+==== Source code
+
+[%collapsible]
+====
+[source, kotlin]
+----
+include::todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[]
+----
+====
+
+=== Detailansicht
+Neben der verbesserten Überblicksansicht wurde auch noch eine Detailansicht link:todo/app/src/main/java/at/htl/todo/ui/layout/DetailsView.kt[DetailsView] und die dazugehörige link:todo/app/src/main/java/at/htl/todo/DetailsActivity.java[DetailsActivity] erstellt.
+Klickt man in der MainView auf den Stift eines Todos wird man auf eine Detailansicht, in der das Todo bearbeitet werden kann, weitergeleitet.
+
+image::images/details_view.png[]
+
+Grundsätzlich sind alle Felder bis auf die Id bearbeitbar. Durch das SSOT Modell wird auch jede Bearbeitung sofort in der Überblicksansicht angezeigt. Um zu dieser zurückzukehren, kann entweder der Zurück-Knopf links oben oder die zurück Geste verwendet werden.
+
+==== Source Code
+===== DetailsView
+[%collapsible]
+====
+[source, kotlin]
+----
+include::todo/app/src/main/java/at/htl/todo/ui/layout/DetailsView.kt[]
+----
+====
+
+===== DetailsActivity
+[%collapsible]
+====
+[source, kotlin]
+----
+include::todo/app/src/main/java/at/htl/todo/DetailsActivity.java[]
+----
+====
+
+== Aufgabe: Eigenes Projekt
+TODO

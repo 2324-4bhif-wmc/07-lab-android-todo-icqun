@@ -6,33 +6,37 @@ import android.util.Log;
 import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import javax.inject.Inject;
 
 import at.htl.todo.model.TodoService;
-import at.htl.todo.ui.layout.MainView;
+import at.htl.todo.ui.layout.DetailsView;
 import at.htl.todo.util.Config;
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
-public class MainActivity extends ComponentActivity {
+public class DetailsActivity extends ComponentActivity {
     static final String TAG = TodoApplication.class.getSimpleName();
 
     @Inject
-    MainView mainView;
-
-    @Inject
-    TodoService todoService;
+    DetailsView detailsView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mainView.buildContent(this);
+        Bundle extras = getIntent().getExtras();
 
-        Config.load(this);
-        var baseUrl = Config.getProperty("json.placeholder.baseurl");
-        Log.i(TAG, "onCreate: " + baseUrl);
+        if (extras == null) {
+            Log.e(TAG, "Extra data for Details activity is missing!");
+            return;
+        }
 
-        todoService.getAll();
+        if(!extras.containsKey("id")) {
+            Log.e(TAG, "Id needed for Details activity is missing!");
+            return;
+        }
+
+        detailsView.buildContent(this, extras.getLong("id"));
     }
 
     @Override
