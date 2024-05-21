@@ -37,11 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import at.htl.todo.DetailsActivity
 import at.htl.todo.model.Model
 import at.htl.todo.model.ModelStore
 import at.htl.todo.model.Todo
+import at.htl.todo.ui.theme.TodoTheme
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -87,20 +89,21 @@ class MainView {
 }
 
 @Composable
-fun Todos(model: Model, modifier: Modifier = Modifier, store: ModelStore) {
+fun Todos(model: Model, modifier: Modifier = Modifier, store: ModelStore?) {
     val todos = model.todos
     LazyColumn(
         modifier = modifier.padding(8.dp)
     ) {
         items(todos.size) { index ->
-            TodoRow(todo = todos[index], store)
+            TodoRow(todoIdx = index, model = model, store)
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-fun TodoRow(todo: Todo, store: ModelStore) {
+fun TodoRow(todoIdx: Int, model: Model, store: ModelStore?) {
+    val todo = model.todos[todoIdx];
     val alpha = if(todo.completed) 0.38f else 1f
     val decoration = if(todo.completed) TextDecoration.LineThrough else TextDecoration.None
     val context = LocalContext.current
@@ -113,10 +116,8 @@ fun TodoRow(todo: Todo, store: ModelStore) {
                 Checkbox(
                     checked = todo.completed,
                     onCheckedChange = {
-                        store.apply { model ->
-                            model.todos.find {
-                                it.id == todo.id
-                            }?.completed = it;
+                        store?.apply { model ->
+                            model.todos[todoIdx].completed = it;
                         }
                     }
                 )
@@ -138,11 +139,9 @@ fun TodoRow(todo: Todo, store: ModelStore) {
             }
         },
         modifier = Modifier.clickable {
-            store.apply { model ->
-                val t = model.todos.find {
-                    it.id == todo.id
-                }
-                t?.completed = !t?.completed!!
+            store?.apply { model ->
+                val t = model.todos[todoIdx]
+                t.completed = !t.completed
             }
         },
         trailingContent = {
@@ -150,7 +149,7 @@ fun TodoRow(todo: Todo, store: ModelStore) {
                 onClick = {
                     val intent = Intent(context, DetailsActivity::class.java)
                     intent.setAction(Intent.ACTION_VIEW)
-                    intent.putExtra("id", todo.id)
+                    intent.putExtra("idx", todoIdx)
                     context.startActivity(intent)
                 },
                 shape = CircleShape,
@@ -166,19 +165,16 @@ fun TodoRow(todo: Todo, store: ModelStore) {
     )
 }
 
-/*
 @Preview(showBackground = true)
 @Composable
 fun TodoPreview() {
     val model = Model()
     val todo = Todo()
-    val store = ModelStore()
     todo.id = 1
     todo.title = "First Todo"
     model.todos = arrayOf(todo)
 
     TodoTheme {
-        Todos(model, store = store)
+        Todos(model, store = null)
     }
 }
-*/

@@ -31,12 +31,12 @@ public class DetailsActivity extends ComponentActivity {
             return;
         }
 
-        if(!extras.containsKey("id")) {
-            Log.e(TAG, "Id needed for Details activity is missing!");
+        if(!extras.containsKey("idx")) {
+            Log.e(TAG, "Index needed for Details activity is missing!");
             return;
         }
 
-        detailsView.buildContent(this, extras.getLong("id"));
+        detailsView.buildContent(this, extras.getInt("idx"));
     }
 
     @Override
