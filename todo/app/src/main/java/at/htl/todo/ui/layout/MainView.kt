@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,7 +25,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,7 +36,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import at.htl.todo.DetailsActivity
 import at.htl.todo.model.Model
 import at.htl.todo.model.ModelStore
 import at.htl.todo.model.Todo
@@ -50,7 +46,6 @@ import javax.inject.Singleton
 
 @Singleton
 class MainView {
-
     @Inject
     constructor() {
     }
@@ -58,7 +53,6 @@ class MainView {
     @Inject
     lateinit var store: ModelStore;
 
-    @OptIn(ExperimentalMaterial3Api::class)
     fun buildContent(activity: ComponentActivity) {
         activity.enableEdgeToEdge()
         activity.setContent {
@@ -68,22 +62,31 @@ class MainView {
                 .subscribeAsState(initial = Model())
                 .value
 
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                topBar = {
-                    CenterAlignedTopAppBar(title = {
-                        Text(text = "ToDos")
-                    })
-                }
-            ) { padding ->
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(paddingValues = padding)
-                ) {
-                    Todos(model = viewModel, modifier = Modifier.padding(all = 4.dp), store = store)
-                }
+            when (viewModel.uiState.pageIndex) {
+                0 -> Overview(model = viewModel, store = store)
+                1 -> DetailsView(model = viewModel, store = store)
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Overview(model: Model, store: ModelStore?) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(title = {
+                Text(text = "ToDos")
+            })
+        }
+    ) { padding ->
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(paddingValues = padding)
+        ) {
+            Todos(model = model, modifier = Modifier.padding(all = 4.dp), store = store)
         }
     }
 }
@@ -106,7 +109,6 @@ fun TodoRow(todoIdx: Int, model: Model, store: ModelStore?) {
     val todo = model.todos[todoIdx];
     val alpha = if(todo.completed) 0.38f else 1f
     val decoration = if(todo.completed) TextDecoration.LineThrough else TextDecoration.None
-    val context = LocalContext.current
 
     ListItem(
         leadingContent = {
@@ -147,10 +149,10 @@ fun TodoRow(todoIdx: Int, model: Model, store: ModelStore?) {
         trailingContent = {
             TextButton(
                 onClick = {
-                    val intent = Intent(context, DetailsActivity::class.java)
-                    intent.setAction(Intent.ACTION_VIEW)
-                    intent.putExtra("idx", todoIdx)
-                    context.startActivity(intent)
+                      store?.apply { model ->
+                          model.uiState.selectedTodoIndex = todoIdx
+                          model.uiState.pageIndex = 1
+                      }
                 },
                 shape = CircleShape,
                 modifier = Modifier.size(40.dp),
