@@ -20,6 +20,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -71,7 +73,9 @@ fun DetailsTopBar(store: ModelStore?) {
 @Composable
 fun Details(model: Model, modifier: Modifier = Modifier, store: ModelStore?) {
     val todo = model.todos[model.uiState.selectedTodoIndex]
-    var title = todo.title
+    val title = remember { mutableStateOf(model.todos[model.uiState.selectedTodoIndex].title)}
+    val id = remember { mutableStateOf(model.todos[model.uiState.selectedTodoIndex].id)}
+
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top,
@@ -92,8 +96,9 @@ fun Details(model: Model, modifier: Modifier = Modifier, store: ModelStore?) {
         )
         Spacer(modifier = Modifier.padding(5.dp))
         OutlinedTextField(
-            value = title,
+            value = title.value,
             onValueChange = {
+                title.value = it
                 store?.apply { model ->
                     model.todos[model.uiState.selectedTodoIndex].title = it
                 }
@@ -107,16 +112,18 @@ fun Details(model: Model, modifier: Modifier = Modifier, store: ModelStore?) {
         )
         Spacer(modifier = Modifier.padding(5.dp))
         OutlinedTextField(
-            value = todo.userId.toString(),
+            value = id.value.toString(),
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
             onValueChange = {
-                store?.apply { model ->
-                    val t = model.todos[model.uiState.selectedTodoIndex]
-
-                    if (it.isEmpty()) {
-                        t.userId = 0
-                    } else if (it.toLongOrNull() != null) {
-                        t.userId = it.toLong()
+                if (it.isEmpty()) {
+                    id.value = 0
+                    store?.apply { model ->
+                        model.todos[model.uiState.selectedTodoIndex].userId = 0
+                    }
+                } else if (it.toLongOrNull() != null) {
+                    id.value = it.toLong()
+                    store?.apply { model ->
+                        model.todos[model.uiState.selectedTodoIndex].userId = it.toLong()
                     }
                 }
             }

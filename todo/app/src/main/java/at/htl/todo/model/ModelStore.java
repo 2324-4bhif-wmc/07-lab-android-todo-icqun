@@ -16,7 +16,6 @@ public class ModelStore extends Store<Model> {
     }
 
     public void setTodos(Todo[] todos) {
-        Log.i(TAG, "SetTodos");
         apply(model -> model.todos = todos);
     }
 }

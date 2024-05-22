@@ -37,7 +37,6 @@ public class Immer<T> {
      * @param resultConsumer the callback function that uses the cloned & modified model
      */
     public void produce(final T currentState, Consumer<T> recipe, Consumer<T> resultConsumer) {
-        Log.i(TAG, "Produce");
         Consumer<T> runOnMainThread = t -> handler.post(() -> {
             recipe.accept(t);
             resultConsumer.accept(t);

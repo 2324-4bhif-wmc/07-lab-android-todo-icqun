@@ -32,7 +32,6 @@ public class Store<T> {
      * The function that receives a clone of the current model and applies its changes to it.
      */
     public void apply(Consumer<T> recipe) {
-        Log.i(TAG, "Apply");
         Consumer<T> onNext = nextState -> pipe.onNext(nextState);
         immer.produce(pipe.getValue(), recipe, onNext);
     }

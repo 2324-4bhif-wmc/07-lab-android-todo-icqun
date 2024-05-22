@@ -58,6 +58,7 @@ class MainView {
         activity.setContent {
             val viewModel = store
                 .pipe
+                .distinctUntilChanged()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeAsState(initial = Model())
                 .value
