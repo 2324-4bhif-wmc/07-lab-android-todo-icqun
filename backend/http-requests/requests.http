@@ -1,0 +1,28 @@
+# GET all
+GET http://localhost:8080/todos
+###
+
+# Create new
+POST http://localhost:8080/todos
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "completed": false,
+  "title": "Hello"
+}
+###
+
+# Update
+PUT http://localhost:8080/todos/1
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "completed": true,
+  "title": "Mathe HÜ"
+}
+###
+
+# Delete
+DELETE http://localhost:8080/todos/1

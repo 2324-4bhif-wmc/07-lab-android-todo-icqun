@@ -483,7 +483,7 @@ include::todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[]
 ====
 
 === Detailansicht
-Neben der verbesserten Überblicksansicht wurde auch noch eine Detailansicht link:todo/app/src/main/java/at/htl/todo/ui/layout/DetailsView.kt[DetailsView] und die dazugehörige link:todo/app/src/main/java/at/htl/todo/DetailsActivity.java[DetailsActivity] erstellt.
+Neben der verbesserten Überblicksansicht wurde auch noch eine Detailansicht link:todo/app/src/main/java/at/htl/todo/ui/layout/DetailsView.kt[DetailsView] erstellt.
 Klickt man in der MainView auf den Stift eines Todos wird man auf eine Detailansicht, in der das Todo bearbeitet werden kann, weitergeleitet.
 
 image::images/details_view.png[]
@@ -499,15 +499,3 @@ Grundsätzlich sind alle Felder bis auf die Id bearbeitbar. Durch das SSOT Model
 include::todo/app/src/main/java/at/htl/todo/ui/layout/DetailsView.kt[]
 ----
 ====
-
-===== DetailsActivity
-[%collapsible]
-====
-[source, kotlin]
-----
-include::todo/app/src/main/java/at/htl/todo/DetailsActivity.java[]
-----
-====
-
-== Aufgabe: Eigenes Projekt
-TODO
